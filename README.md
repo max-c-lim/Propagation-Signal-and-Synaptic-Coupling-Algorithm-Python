@@ -103,4 +103,4 @@ electrode. If is None, use thres_freq for threshold instead.
 ## Notable changes made when converting from MATLAB to Python
 1. Instead of using [], use None
 2. Every instance of a 1 x N cell has been changed to a 1d np.array with shape (N, )
-3. automated_detection_propagation is noticeably slower in Python than MATLAB
+3. automated_detection_propagation is somewhat slower in Python than MATLAB

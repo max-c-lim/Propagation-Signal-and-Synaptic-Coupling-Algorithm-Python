@@ -4,8 +4,10 @@ from multiprocessing import Pool
 
 
 def int_round(n):
-    # Rounds a float to the nearest integer
-    # (uses standard math rounding, i.e. 0.5 rounds up to 1)
+    """
+    Rounds a float (n) to the nearest integer
+    Uses standard math rounding, i.e. 0.5 rounds up to 1
+    """
 
     n_int = int(n)
     if n - n_int >= 0.5:
@@ -108,7 +110,6 @@ def get_propagation(electrode_cohorts):
                     order = np.concatenate((index, order))
                     temps = temps[:, order]
 
-                    # TODO: Investigate if MATLAB operator: ' is important, or it is just used for table()
                     table_data = {
                         "ID": temps[0, :],
                         "latency": temps[1, :],
@@ -359,7 +360,7 @@ def automated_detection_propagation(spike_times, thres_freq, seconds_recording, 
             all constituent electrodes. p should be between 0 and 100.
 
     Outputs:
-        list_of_propagation
+        list_of_propagation: np.array
             Contains pandas.DataFrames of electrode cohorts for each propagation
             in a recording. Each DataFrame provides a list of candidate
             electrodes along with the latency between each electrode
@@ -373,6 +374,11 @@ def automated_detection_propagation(spike_times, thres_freq, seconds_recording, 
             containing the propagating spike times isolated with 2 anchor points,
             the 1st element is the propagating spike times isolated with 3 anchor points,
             etc., until all constituent electrodes are used as anchor points.
+
+    Possible optimizations:
+        Optimize parallel processing. See TODO
+        numpy operations can speed up calculations
+        Combine scan_reference_electrode and rescan_candidate_cohorts? (1 loop instead of 2)
     """
 
     candidate_cohorts = scan_reference_electrode(spike_times, thres_freq, seconds_recording, thres_number_spikes, ratio)
@@ -380,11 +386,3 @@ def automated_detection_propagation(spike_times, thres_freq, seconds_recording, 
     list_of_propagation = get_propagation(electrode_cohorts)
     propagating_times = get_propagation_time(list_of_propagation, spike_times)
     return list_of_propagation, propagating_times
-
-
-if __name__ == "__main__":
-    from load_example_data import *
-    list_of_propagation, propagating_times = automated_detection_propagation(SPIKE_TIMES, THRES_FREQ, SECONDS_RECORDING, THRES_NUMBER_SPIKES, RATIO, THRES_COOCCURRENCES, P)
-    np.save("comparison_data/py_data/list_of_propagation.npy", np.array(list_of_propagation, dtype=object))
-    np.save("comparison_data/py_data/time_all.npy", np.array(propagating_times, dtype=object))
-

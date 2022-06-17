@@ -23,7 +23,7 @@ from automated_detection_propagation import automated_detection_propagation
 if __name__ == "__main__":
     list_of_propagation, propagating_times = automated_detection_propagation(spike_times, thres_freq, seconds_recording, thres_number_spikes, ratio, thres_cooccurrences, p)`
 ```
-NOTE: The function `automated_detection_propagation` must be called somewhere within `if __name__ == "__main__":`
+*Note: The function `automated_detection_propagation` must be called somewhere within `if __name__ == "__main__":`
 
 Use (`thres_freq` and `seconds_recording`) or `thres_number_spikes`:
 
@@ -83,7 +83,7 @@ electrode. If is None, use thres_freq for threshold instead.
     Percentage of the maximum number of co-occurrences required for
     all constituent electrodes. p should be between 0 and 100.
 
-### Outputs
+### Outputs of automated_detection_propagation
 **list_of_propagation:** np.array with shape (P, )<br>
     Contains pandas.DataFrames of electrode cohorts for each propagation
     in a recording. Each DataFrame provides a list of candidate
@@ -101,5 +101,5 @@ electrode. If is None, use thres_freq for threshold instead.
     etc., until all constituent electrodes are used as anchor points.
 
 ## Notable changes made when converting from MATLAB to Python
-1. Instead of using [], use None.
-2. Every instance of using a 1 x N cell has been changed to a 1d np.array with shape (N, )
+1. Instead of using [], use None
+2. Every instance of a 1 x N cell has been changed to a 1d np.array with shape (N, )

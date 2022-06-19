@@ -27,9 +27,7 @@ def get_propagation_time(list_of_propagation, spike_times):
             With shape (N,) where N elements represent N electrodes.
             Each column contains a np.array with shape (m,) representing
             the spike times for each electrode. The spike times should be
-            in units of ms. This code deals with data sampled at 20000Hz.
-            Upsample or downsample your data into 20000Hz sample rate before
-            feeding into the algorithm.
+            in units of ms.
 
     Output:
         propagating_times: np.array
@@ -130,7 +128,7 @@ def rescan_candidate_cohorts(candidate_cohorts, thres_cooccurrences, p):
     co-occurrences with the reference electrode. Second, scan through all
     other electrodes in the set of candidate electrodes, to identify only
     the electrodes with more than p * the maximum number of co-occurrences
-    and more than thres_number_spikes co-occurrences in the 0.5ms window with
+    and more than thres_cooccurrences in the 0.5ms window with
     maximum number of co-occurrences in the CCG. The electrodes that satisfy
     this criterion are kept in electrode_cohorts
 
@@ -192,9 +190,7 @@ def scan_reference_electrode(spike_times, thres_freq, seconds_recording, thres_n
             With shape (N,) where N columns represent N electrodes.
             Each column contains a np.array with shape (m,) representing
             the spike times for each electrode. The spike times should be
-            in units of ms. This code deals with data sampled at 20000Hz.
-            Upsample or downsample your data into 20000Hz sample rate before
-            feeding into the algorithm.
+            in units of ms.
         thres_freq: int or float
             A value representing the frequency lower bound of the spiking
             frequency for all electrodes. Only electrodes that's above the
@@ -330,9 +326,7 @@ def automated_detection_propagation(spike_times, thres_freq, seconds_recording, 
             With shape (N,) where N columns represent N electrodes.
             Each column contains a np.array with shape (m,) representing
             the spike times for each electrode. The spike times should be
-            in units of ms. This code deals with data sampled at 20000Hz.
-            Upsample or downsample your data into 20000Hz sample rate before
-            feeding into the algorithm.
+            in units of ms.
         thres_freq: int, float, or None
             A value representing the frequency lower bound of the spiking
             frequency for all electrodes. Only electrodes that's above the

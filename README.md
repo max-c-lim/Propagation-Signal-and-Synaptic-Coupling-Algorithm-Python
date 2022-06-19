@@ -13,8 +13,7 @@ Download the file [automated_detection_propagation.py](automated_detection_propa
 ## Usage
 The input of the algorithm is a np.array with shape (N, ) where each element represents one electrode.
 Each element is a np.array with shape (m, ) that contains the spike times for each electrode.
-The spike times should be in units of ms. This code deals with data sampled at 20000Hz. 
-Upsample or downsample your data into 20000Hz sample rate before feeding into the algorithm.
+The spike times should be in units of ms. 
 
 Next, use the function automated_detection_propagation in the script automated_detection_propagation.py to extract the propagation signals in an array.
 ```python
@@ -45,9 +44,7 @@ An example is provided in [example/example.py](example/example.py)
 N columns represent N electrodes.
 Each column contains a np.array with shape (m,) representing
 the spike times for each electrode. The spike times should be
-in units of ms. This code deals with data sampled at 20000Hz.
-Upsample or downsample your data into 20000Hz sample rate before
-feeding into the algorithm.
+in units of ms. 
 
 **thres_freq:** int, float, or None
 <br>

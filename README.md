@@ -29,12 +29,12 @@ Use (`thres_freq` and `seconds_recording`) or `thres_number_spikes`:
 
 If using (`thres_freq` and `seconds_recording`), use `None` for `thres_number_spikes`
 ```python
-list_of_propagation, propagating_times = automated_detection_propagation(spike_times, thres_freq, seconds_recording, None, ratio, thres_cooccurrences, p)`
+list_of_propagation, propagating_times = automated_detection_propagation(spike_times, thres_freq, seconds_recording, None, ratio, thres_cooccurrences, p)
 ```
 
 If using `thres_number_spikes`, use `None` for `thres_freq` and `seconds_recording`
 ```python
-list_of_propagation, propagating_times = automated_detection_propagation(spike_times, None, None, thres_number_spikes, ratio, thres_cooccurrences, p)`
+list_of_propagation, propagating_times = automated_detection_propagation(spike_times, None, None, thres_number_spikes, ratio, thres_cooccurrences, p)
 ```
 
 An example is provided in [example/example.py](example/example.py)

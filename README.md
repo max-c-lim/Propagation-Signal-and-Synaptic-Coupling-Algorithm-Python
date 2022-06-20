@@ -80,23 +80,59 @@ electrode. If is None, use thres_freq for threshold instead.
     Percentage of the maximum number of co-occurrences required for
     all constituent electrodes. p should be between 0 and 100.
 
+#### Optional Inputs #### 
+It is recommended to maintain the original values because these values
+have been thoroughly tested to produce good results.
+
+**small_window**: int or float: default=0.5 <br>
+The size of the window of n1 described in ratio
+
+**big_window**: int or float: default=2<br>
+The size of the window of n2 described in ratio
+
+**ccg_before** int or float: default=1.5<br>
+The time before each reference spike to use when creating the CCG
+
+**ccg_after** int or float: default=1.5<br>
+The time after each reference spike to use when creating the CCG
+
+**ccg_n_bins** int: default=61<br>
+The number of bins to use when creating the CCG
+
+**time_unit** str, int, or float: default="ms" <br>
+Indicates the units of the values of spike_times, small_window, big_window,
+ccg_before, and ccg_after
+
+If "ms", the values will be assumed to be in milliseconds <br>
+If "s", the values will be assumed to be in seconds <br>
+If "m", the values will be assumed to be in minutes <br>
+If "h", the values will be assumed to be in hours
+If an integer or float (such as 20000), the value of time_unit
+will be the sampling frequency in Hz. The values will be assumed to be in samples
+
 ### Outputs of automated_detection_propagation
-**list_of_propagation:** np.array with shape (P, )<br>
-    Contains pandas.DataFrames of electrode cohorts for each propagation
-    in a recording. Each DataFrame provides a list of candidate
+**list_of_propagation:** np.array with shape (P,)<br>
+    Each element contains a pandas.DataFrames (each with 4 columns) of electrode cohorts for
+    each propagation (p) in a recording. Each DataFrame provides a list of candidate
     electrodes along with the latency between each electrode
     with the reference electrode, the number of co-occurrences,
     and the n2/n1 ratio.
 
-**propagating_times:** np.array with shape (P, )<br>
-    Contains a 1d np.array of spike
-    times in the propagation with different number of anchor points chosen
-    for each propagation in list_of_propagation with the same order.
-    The 0th element in each np.array of propagating_times is np.array
-    containing the propagating spike times isolated with 2 anchor points,
-    the 1st element is the propagating spike times isolated with 3 anchor points,
-    etc., until all constituent electrodes are used as anchor points.
+**propagating_times:** np.array with shape (P,)<br>
+Each element contains a 1d np.array with shape (Q,)
+of spike times in the propagation with different number of anchor points chosen
+for each propagation in list_of_propagation. The pth element in propagating_times
+contains the spike times for the pth element in list_of_propagation.
 
+The qth element in the inner array with shape (Q,) is an array containing the
+propagating spike times isolated with q+1 anchor points. I.e. the 0th element
+contains the propagating spike times isolated with 1 anchor point (an empty array),
+the 1st element contains propagating spike times isolated with 2 anchor points,
+the 2nd element contains propagating spike times isolated with 3 anchor points,
+etc., until all constituent electrodes are used as anchor points.
+
+The values in propagating_times will be in the same units as spike_times
+(provided in time_unit)
 ## Notable changes made when converting from MATLAB to Python
 1. Instead of using [], use None
 2. Every instance of a 1 x N cell has been changed to a 1d np.array with shape (N, )

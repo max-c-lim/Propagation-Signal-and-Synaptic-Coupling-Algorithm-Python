@@ -29,3 +29,21 @@ if __name__ == "__main__":
     Add the number you want to use for thres_number_spikes. Here, 180 is used.
     """
     list_of_propagation, time_all = automated_detection_propagation(spike_times, None, None, 180, 0.5, 50, 50)
+
+
+    """
+    For the following parameters, it is recommended to maintain the original values
+    because those were the only values thoroughly tested and ensured to produce good results.
+    However, these parameters can be changed as shown below
+    
+    small_window (default value=0.5)
+    big_window (default=2)
+    ccg_before (default=1.5)
+    ccg_after (default=1.5)
+    ccg_n_bins (default=61)
+    time_unit (default="ms")
+    """
+    list_of_propagation, time_all = automated_detection_propagation(spike_times, None, None, 180, 0.5, 50, 50,
+                                                                    small_window=1.0, big_window=2.2,
+                                                                    ccg_before=2.0, ccg_after=2.0, ccg_n_bins=81,
+                                                                    time_unit="m")

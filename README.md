@@ -11,9 +11,8 @@ Download the file [automated_detection_propagation.py](automated_detection_propa
 3. multiprocessing
 
 ## Usage
-The input of the algorithm is a np.array with shape (N, ) where each element represents one electrode.
-Each element is a np.array with shape (m, ) that contains the spike times for each electrode.
-The spike times should be in units of ms. 
+The input of the algorithm is a np.array with shape (N,) where each element represents one electrode.
+Each element is a np.array with shape (m,) that contains the spike times for each electrode.
 
 Next, use the function automated_detection_propagation in the script automated_detection_propagation.py to extract the propagation signals in an array.
 ```python
@@ -22,7 +21,7 @@ from automated_detection_propagation import automated_detection_propagation
 if __name__ == "__main__":
     list_of_propagation, propagating_times = automated_detection_propagation(spike_times, thres_freq, seconds_recording, thres_number_spikes, ratio, thres_cooccurrences, p)`
 ```
-*Note: The function `automated_detection_propagation` must be called somewhere within `if __name__ == "__main__":`
+**Note**: The function `automated_detection_propagation` must be called somewhere within `if __name__ == "__main__":`
 
 Use (`thres_freq` and `seconds_recording`) or `thres_number_spikes`:
 
@@ -36,15 +35,26 @@ If using `thres_number_spikes`, use `None` for `thres_freq` and `seconds_recordi
 list_of_propagation, propagating_times = automated_detection_propagation(spike_times, None, None, thres_number_spikes, ratio, thres_cooccurrences, p)
 ```
 
-An example is provided in [example/example.py](example/example.py)
+The parameters `small_window`, `big_window`, `ccg_before`, and `ccg_after` can be given input values in the function call
+to alter how the algorithm generates the propagations. These four parameters and spike_times must be given in the same time unit
+i.e. if spike_times contains times in ms, small_window must also be in ms. 
+<br>**NOTE:** The default parameters are in ms, so if spike_times is not in ms, these values must be changed in the function call.
+<br>The parameter `ccg_n_bins` can be changed as well.
+```python
+list_of_propagation, time_all = automated_detection_propagation(spike_times, None, None, 180, 0.5, 50, 50,
+                                                                small_window=1.0, big_window=2.2,
+                                                                ccg_before=2.0, ccg_after=2.0, ccg_n_bins=81)
+```
+
+
+Examples are provided in [example/example.py](example/example.py)
 
 ### Inputs to automated_detection_propagation
 **spike_times:** np.array with shape (N, )
 <br>
 N columns represent N electrodes.
 Each column contains a np.array with shape (m,) representing
-the spike times for each electrode. The spike times should be
-in units of ms. 
+the spike times for each electrode.
 
 **thres_freq:** int, float, or None
 <br>
@@ -64,7 +74,7 @@ electrode. If is None, use thres_freq for threshold instead.
 
 **ratio:** float
 <br>
-    Let n1 denote the largest sum of counts in any 0.5 ms moving
+(Assuming the time unit is ms) let n1 denote the largest sum of counts in any 0.5 ms moving
     window in the cross-correlogram (CCG) and n2 denote the sum
     of counts of the 2 ms window with the location of the largest
     sum in the center. If the largest sum is found in the first
@@ -99,17 +109,6 @@ The time after each reference spike to use when creating the CCG
 **ccg_n_bins** int: default=61<br>
 The number of bins to use when creating the CCG
 
-**time_unit** str, int, or float: default="ms" <br>
-Indicates the units of the values of spike_times, small_window, big_window,
-ccg_before, and ccg_after
-
-If "ms", the values will be assumed to be in milliseconds <br>
-If "s", the values will be assumed to be in seconds <br>
-If "m", the values will be assumed to be in minutes <br>
-If "h", the values will be assumed to be in hours
-If an integer or float (such as 20000), the value of time_unit
-will be the sampling frequency in Hz. The values will be assumed to be in samples
-
 ### Outputs of automated_detection_propagation
 **list_of_propagation:** np.array with shape (P,)<br>
     Each element contains a pandas.DataFrames (each with 4 columns) of electrode cohorts for
@@ -132,7 +131,7 @@ the 2nd element contains propagating spike times isolated with 3 anchor points,
 etc., until all constituent electrodes are used as anchor points.
 
 The values in propagating_times will be in the same units as spike_times
-(provided in time_unit)
+
 ## Notable changes made when converting from MATLAB to Python
 1. Instead of using [], use None
 2. Every instance of a 1 x N cell has been changed to a 1d np.array with shape (N, )

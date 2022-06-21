@@ -41,9 +41,7 @@ if __name__ == "__main__":
     ccg_before (default=1.5)
     ccg_after (default=1.5)
     ccg_n_bins (default=61)
-    time_unit (default="ms")
     """
     list_of_propagation, time_all = automated_detection_propagation(spike_times, None, None, 180, 0.5, 50, 50,
                                                                     small_window=1.0, big_window=2.2,
-                                                                    ccg_before=2.0, ccg_after=2.0, ccg_n_bins=81,
-                                                                    time_unit="m")
+                                                                    ccg_before=2.0, ccg_after=2.0, ccg_n_bins=81)

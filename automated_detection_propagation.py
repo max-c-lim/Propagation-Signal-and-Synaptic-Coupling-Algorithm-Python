@@ -15,7 +15,7 @@ def int_round(n):
     return n_int
 
 
-def get_propagation_time(list_of_propagation, spike_times):
+def get_propagation_time(list_of_propagation, spike_times, prop_after):
     """
     This function generates a sequence of eAPs for each
     propagation using different number of anchor points
@@ -26,7 +26,13 @@ def get_propagation_time(list_of_propagation, spike_times):
         spike_times: np.array
             With shape (N,) where N elements represent N electrodes.
             Each column contains a np.array with shape (m,) representing
-            the spike times for each electrode in ms
+            the spike times for each electrode
+        ccg_after: int or float
+            Maximum time after reference spike to classify the target spike as
+            a propagation of the reference spike.
+            For example, if reference spike is at time 0 and prop_after=1.5,
+            any target spike within the interval (0, 1.5) will be classified as a
+            propagation of reference spike
 
     Output:
         propagating_times: np.array
@@ -51,7 +57,7 @@ def get_propagation_time(list_of_propagation, spike_times):
         current_signal = list_of_propagation[i]
 
         ind0 = 0
-        index = np.flatnonzero(current_signal.loc[:, "latency"] > 0.001)
+        index = np.flatnonzero(current_signal.loc[:, "latency"] > 0)  # 0.001
         index = np.concatenate(([ind0], index))
         current_signal = current_signal.loc[index, :].copy()
         size_of_signal, _ = current_signal.shape
@@ -69,7 +75,7 @@ def get_propagation_time(list_of_propagation, spike_times):
             ind_all = []
             for j in range(reference_spike_times.size):
                 ref = reference_spike_times[j]
-                index = np.flatnonzero((target_spike_times > ref) & (target_spike_times < ref+1.5))
+                index = np.flatnonzero((target_spike_times > ref) & (target_spike_times < ref+prop_after))
                 if index.size > 0:
                     ind_all.append(j)
 
@@ -193,7 +199,7 @@ def scan_reference_electrode(spike_times, thres_freq, seconds_recording, thres_n
         spike_times: np.array
             With shape (N,) where N columns represent N electrodes.
             Each column contains a np.array with shape (m,) representing
-            the spike times for each electrode in ms
+            the spike times for each electrode
         thres_freq: int or float
             A value representing the frequency lower bound of the spiking
             frequency for all electrodes. Only electrodes that's above the
@@ -214,13 +220,13 @@ def scan_reference_electrode(spike_times, thres_freq, seconds_recording, thres_n
             of the first 2 ms window or the counts of the last 2 ms window
             as n2. This ratio is the lower bound threshold for n1/n2
         small_window: int or float
-            The size of the window of n1 described in ratio in ms
+            The size of the window of n1 described in ratio i
         big_window: int or float
-            The size of the window of n2 described in ratio in ms
+            The size of the window of n2 described in ratio
         ccg_before: int or float
-            The time before each reference spike to use when creating the CCG in ms
+            The time before each reference spike to use when creating the CCG
         ccg_after: int or float
-            The time after each reference spike to use when creating the CCG in ms
+            The time after each reference spike to use when creating the CCG
         ccg_n_bins: int
             The number of bins to use when creating the CCG
 
@@ -352,8 +358,7 @@ def _scan_reference_electrode_func(electrode):
 
 
 def automated_detection_propagation(spike_times, thres_freq, seconds_recording, thres_number_spikes, ratio, thres_cooccurrences, p,
-                                    small_window=0.5, big_window=2, ccg_before=1.5, ccg_after=1.5, ccg_n_bins=61,
-                                    time_unit="ms"):
+                                    small_window=0.5, big_window=2, ccg_before=1.5, ccg_after=1.5, ccg_n_bins=61):
     """
     This function detects eAP propagation in a recording and generates a
     collection of cohort electrodes, each representing an eAP propagation in
@@ -403,17 +408,6 @@ def automated_detection_propagation(spike_times, thres_freq, seconds_recording, 
             The time after each reference spike to use when creating the CCG
         ccg_n_bins:
             The number of bins to use when creating the CCG
-        time_unit: str or int
-            Indicates the units of the values of spike_times, small_window, big_window,
-            ccg_before, and ccg_after
-
-            If "ms", the values will be assumed to be in milliseconds
-            If "s", the values will be assumed to be in seconds
-            If "m", the values will be assumed to be in minutes
-            If "h", the values will be assumed to be in hours
-            If an integer or float (such as 20000), the value of time_unit
-            will be the sampling frequency in Hz. The values will be assumed to be in samples
-
     Outputs:
         list_of_propagation: np.array
             With shape (P,), contains pandas.DataFrames (each with 4 columns) of electrode cohorts for
@@ -433,48 +427,17 @@ def automated_detection_propagation(spike_times, thres_freq, seconds_recording, 
             the 1st element contains propagating spike times isolated with 2 anchor points,
             the 2nd element contains propagating spike times isolated with 3 anchor points,
             etc., until all constituent electrodes are used as anchor points.
-            
-            The values in propagating_times will be in the same units as spike_times
-            (provided in time_unit)
 
     Possible optimizations:
         Optimize parallel processing. See TODO
         numpy operations can speed up calculations
         Combine scan_reference_electrode and rescan_candidate_cohorts? (1 loop instead of 2)
     """
-    
-    # Convert spike_times to ms depending on unit
-    units_to_ms = {
-        "ms": 1,
-        "s": 1000,
-        "m": 60000,
-        "h": 3600000,
-    }
-    if time_unit in units_to_ms:
-        scale_factor = units_to_ms[time_unit]
-    elif type(time_unit) == int or type(time_unit) == float:
-        scale_factor = (1000 / float(time_unit))
-    else:
-        raise ValueError("'time_unit' must be 'ms', 's', 'm', 'h', an integer, or a float.")
-    
-    for i in range(spike_times.size):
-        spike_times[i] = spike_times[i] * scale_factor
-    small_window *= scale_factor
-    big_window *= scale_factor
-    ccg_before *= scale_factor
-    ccg_after *= scale_factor
-
-    ccg_n_bins = int_round(ccg_n_bins)
-
     candidate_cohorts = scan_reference_electrode(spike_times, thres_freq, seconds_recording, thres_number_spikes, ratio,
                                                  small_window=small_window, big_window=big_window,
-                                                 ccg_before=ccg_before, ccg_after=ccg_after, ccg_n_bins=ccg_n_bins)
+                                                 ccg_before=ccg_before, ccg_after=ccg_after, ccg_n_bins=int_round(ccg_n_bins))
     electrode_cohorts = rescan_candidate_cohorts(candidate_cohorts, thres_cooccurrences, p)
     list_of_propagation = get_propagation(electrode_cohorts)
-    propagating_times = get_propagation_time(list_of_propagation, spike_times)
-
-    for p in range(propagating_times.size):
-        for a in range(propagating_times[p].size):
-            propagating_times[p][a] = propagating_times[p][a] / scale_factor
+    propagating_times = get_propagation_time(list_of_propagation, spike_times, prop_after=ccg_after)
 
     return list_of_propagation, propagating_times

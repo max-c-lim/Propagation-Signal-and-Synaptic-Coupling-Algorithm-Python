@@ -21,12 +21,17 @@ def get_propagation_time(list_of_propagation, spike_times, prop_after):
     propagation using different number of anchor points
 
     Inputs:
-        list_of_propagation: np.array
-            Output of get_propagation with shape (P,)
-        spike_times: np.array
-            With shape (N,) where N elements represent N electrodes.
-            Each column contains a np.array with shape (m,) representing
-            the spike times for each electrode
+        list_of_propagation: list
+            Output of get_propagation with P elements.
+            Each element is a pandas.DataFrame of electrode cohorts for each propagation
+            in a recording. Each DataFrame provides a list of candidate
+            electrodes along with the latency between each electrode
+            with the reference electrode, the number of co-occurrences,
+            and the n1/n2 ratio.
+        spike_times: list
+            Contains N elements, each representing 1 electrode.
+            Each element contains a np.array with shape (m,) representing
+            the spike times for each electrode.
         ccg_after: int or float
             Maximum time after reference spike to classify the target spike as
             a propagation of the reference spike.
@@ -35,8 +40,8 @@ def get_propagation_time(list_of_propagation, spike_times, prop_after):
             propagation of reference spike
 
     Output:
-        propagating_times: np.array
-            With shape (P,) where each element contains a 1d np.array with shape (Q,)
+        propagating_times: list
+            Contains P elements where each element contains a 1d np.array with shape (Q,)
             of spike times in the propagation with different number of anchor points chosen
             for each propagation in list_of_propagation. The pth element in propagating_times
             contains the spike times for the pth element in list_of_propagation.
@@ -49,7 +54,7 @@ def get_propagation_time(list_of_propagation, spike_times, prop_after):
             etc., until all constituent electrodes are used as anchor points.
     """
 
-    n = list_of_propagation.size
+    n = len(list_of_propagation)
     propagating_times = []
     for i in range(n):
         time_signal = [np.array([])]
@@ -83,7 +88,7 @@ def get_propagation_time(list_of_propagation, spike_times, prop_after):
             time_signal.append(np.sort(np.unique(time)))
         propagating_times.append(np.asarray(time_signal, dtype=object))
 
-    return np.asarray(propagating_times, dtype=object)
+    return propagating_times
 
 
 def get_propagation(electrode_cohorts):
@@ -92,20 +97,23 @@ def get_propagation(electrode_cohorts):
     representing an eAP propagation in each recording
 
     Inputs:
-        electrode_cohorts: np.array
-            Output of rescan_candidate_cohorts
+        electrode_cohorts: list
+            Output of rescan_candidate_cohorts.
+            Each element is a np.array that contains the candidate electrodes
+            along with the latency between each electrode with the reference electrode,
+            the number of cooccurrences, and the n1/n2 ratio.
 
     Output:
-        list_of_propagation: np.array
-            Contains a pandas.DataFrame of electrode cohorts for each propagation
+        list_of_propagation: list
+            Each element is a pandas.DataFrame of electrode cohorts for each propagation
             in a recording. Each DataFrame provides a list of candidate
             electrodes along with the latency between each electrode
             with the reference electrode, the number of co-occurrences,
-            and the n2/n1 ratio.
+            and the n1/n2 ratio.
     """
 
     list_of_propagation = []
-    for i in range(electrode_cohorts.size):
+    for i in range(len(electrode_cohorts)):
         if electrode_cohorts[i].size > 0:
             temps = electrode_cohorts[i]
             m1, n1 = temps.shape
@@ -127,7 +135,7 @@ def get_propagation(electrode_cohorts):
                     if table.size > 0:
                         list_of_propagation.append(table)
 
-    return np.asarray(list_of_propagation, dtype=object)
+    return list_of_propagation
 
 
 def rescan_candidate_cohorts(candidate_cohorts, thres_cooccurrences, p):
@@ -142,13 +150,12 @@ def rescan_candidate_cohorts(candidate_cohorts, thres_cooccurrences, p):
     this criterion are kept in electrode_cohorts
 
     Inputs:
-        candidate_cohorts: np.array
-            Output of scan_reference_electrode.py. np.array contains a
-            list of candidate constituent electrodes for each reference
-            electrode. Each row provides a list of candidate electrodes
-            along with the latency between each electrode with the
-            reference electrode, the number of co-occurrences and the n2/n1
-            ratio.
+        candidate_cohorts: list
+            Output of scan_reference_electrode.py. Each element is a np.array
+            containing a list of candidate constituent electrodes for each reference electrode.
+            Each row of the np.arrays provides a list of candidate electrodes along with the
+            latency between each electrode with the reference electrode, the number
+            of co-occurrences, and the n1/n2 ratio.
         thres_cooccurrences: int or float
             Lower bound of the number of short latency co-occurrences each
             electrode needs to have.
@@ -157,24 +164,23 @@ def rescan_candidate_cohorts(candidate_cohorts, thres_cooccurrences, p):
             all constituent electrodes. p should be between 0 and 100.
 
     Output:
-        electrode_cohorts: np.array
-            Contains the constituent electrodes for each reference electrode.
+        electrode_cohorts: list
             Each element is a np.array that contains the candidate electrodes
             along with the latency between each electrode with the reference electrode,
-            the number of cooccurrences, and the n2/n1 ratio.
+            the number of cooccurrences, and the n1/n2 ratio.
 
     """
 
-    numbers = candidate_cohorts.size
+    numbers = len(candidate_cohorts)
     electrode_cohorts = [np.array([])] * numbers
 
     for i in range(numbers):
         if candidate_cohorts[i].size > 0:
             current_cohort = candidate_cohorts[i]
-
+            current_cohort = current_cohort[:, np.flatnonzero(current_cohort[2, :] >= thres_cooccurrences)]
             reference = np.flatnonzero(current_cohort[0, :] == i)
-
-            target_electrodes = np.flatnonzero((current_cohort[2, :] >= thres_cooccurrences) & (current_cohort[1, :] != 0) & (current_cohort[0, :] != reference))
+            non_zero_electrodes = np.flatnonzero(current_cohort[1, :] != 0)
+            target_electrodes = np.setdiff1d(non_zero_electrodes, reference)
 
             if target_electrodes.size > 0:
                 cooccurrences = p/100 * max(current_cohort[2, target_electrodes])
@@ -183,7 +189,7 @@ def rescan_candidate_cohorts(candidate_cohorts, thres_cooccurrences, p):
                 current_cohort_new = current_cohort[:, index]
                 electrode_cohorts[i] = current_cohort_new
 
-    return np.array(electrode_cohorts, dtype=object)
+    return electrode_cohorts
 
 
 def scan_reference_electrode(spike_times, thres_freq, seconds_recording, thres_number_spikes, ratio,
@@ -196,10 +202,10 @@ def scan_reference_electrode(spike_times, thres_freq, seconds_recording, thres_n
     constituent electrodes from candidate electrode cohorts.
 
     Inputs:
-        spike_times: np.array
-            With shape (N,) where N columns represent N electrodes.
-            Each column contains a np.array with shape (m,) representing
-            the spike times for each electrode
+        spike_times: list
+            Contains N elements, each representing 1 electrode.
+            Each element contains a np.array with shape (m,) representing
+            the spike times for each electrode.
         thres_freq: int or float
             A value representing the frequency lower bound of the spiking
             frequency for all electrodes. Only electrodes that's above the
@@ -231,12 +237,12 @@ def scan_reference_electrode(spike_times, thres_freq, seconds_recording, thres_n
             The number of bins to use when creating the CCG
 
     Output:
-        candidate_cohorts: np.array
-            Contains a list of candidate constituent electrodes for each reference
-            electrode. Each row provides a list of candidate electrodes
-            along with the latency between each electrode with the
-            reference electrode, the number of co-occurrences and the n2/n1
-            ratio.
+        candidate_cohorts: list
+            Each element is a np.array containing a list of candidate constituent
+            electrodes for each reference electrode. Each row of the np.arrays
+            provides a list of candidate electrodes along with the latency between
+            each electrode with the reference electrode, the number of co-occurrences,
+            and the n1/n2 ratio.
     """
 
     if thres_number_spikes is not None:
@@ -260,7 +266,7 @@ def scan_reference_electrode(spike_times, thres_freq, seconds_recording, thres_n
 
     init_dict["t"] = int_round(init_dict["small_window"] * ccg_ind_factor)
 
-    n_e = spike_times.size
+    n_e = len(spike_times)
     init_dict["n_e"] = n_e
     candidate_cohorts = [np.array([])] * n_e
 
@@ -273,7 +279,7 @@ def scan_reference_electrode(spike_times, thres_freq, seconds_recording, thres_n
             if cohort_data is not None:
                 candidate_cohorts[i] = cohort_data
 
-    return np.array(candidate_cohorts, dtype=object)
+    return candidate_cohorts
 
 
 def _scan_reference_electrode_worker_init(init_dict):
@@ -302,7 +308,7 @@ def _scan_reference_electrode_func(electrode):
 
     ref = spike_times[electrode]
     n = ref.size  # Number of spikes detected by electrode
-    # Assume in ms scale
+
     if n >= 0 and n >= thres:
         time_delay = np.full(n_e, -999.0)
         small_window_cooccurrences = np.zeros(n_e)
@@ -367,9 +373,9 @@ def automated_detection_propagation(spike_times, thres_freq, seconds_recording, 
     different number of anchor points.
 
     Inputs:
-        spike_times: np.array
-            With shape (N,) where N columns represent N electrodes.
-            Each column contains a np.array with shape (m,) representing
+        spike_times: list
+            Contains N elements, each representing 1 electrode.
+            Each element contains a np.array with shape (m,) representing
             the spike times for each electrode.
         thres_freq: int, float, or None
             A value representing the frequency lower bound of the spiking
@@ -389,7 +395,7 @@ def automated_detection_propagation(spike_times, thres_freq, seconds_recording, 
             sum in the center. If the largest sum is found in the first
             1 ms or the last 1 ms of the CCG, take the sum of the counts
             of the first 2 ms window or the counts of the last 2 ms window
-            as n2. This ratio is the lower bound threshold for n2/n1
+            as n2. This ratio is the lower bound threshold for n1/n2
         thres_cooccurrences: int or float
             Lower bound of the number of short latency co-occurrences each
             electrode needs to have.
@@ -409,14 +415,14 @@ def automated_detection_propagation(spike_times, thres_freq, seconds_recording, 
         ccg_n_bins:
             The number of bins to use when creating the CCG
     Outputs:
-        list_of_propagation: np.array
-            With shape (P,), contains pandas.DataFrames (each with 4 columns) of electrode cohorts for
+        list_of_propagation: list
+            Contains P elements, each a pandas.DataFrames (each with 4 columns) of electrode cohorts for
             each propagation (p) in a recording. Each DataFrame provides a list of candidate
             electrodes along with the latency between each electrode
             with the reference electrode, the number of co-occurrences,
-            and the n2/n1 ratio.
-        propagating_times: np.array
-            With shape (P,) where each element contains a 1d np.array with shape (Q,)
+            and the n1/n2 ratio.
+        propagating_times: list
+            Contains P elements, each a 1d np.array with shape (Q,)
             of spike times in the propagation with different number of anchor points chosen
             for each propagation in list_of_propagation. The pth element in propagating_times
             contains the spike times for the pth element in list_of_propagation.
@@ -441,3 +447,16 @@ def automated_detection_propagation(spike_times, thres_freq, seconds_recording, 
     propagating_times = get_propagation_time(list_of_propagation, spike_times, prop_after=ccg_after)
 
     return list_of_propagation, propagating_times
+
+
+if __name__ == "__main__":
+    spike_times = np.load("220705_16460_000439_data_spike_times.npy", allow_pickle=True).tolist()
+    list_of_propagation, time_all = automated_detection_propagation(spike_times,
+                                                                    thres_freq=0.05,
+                                                                    seconds_recording=300,
+                                                                    thres_number_spikes=None,
+                                                                    ratio=0.5,
+                                                                    thres_cooccurrences=5,
+                                                                    p=50)
+    print(len(list_of_propagation))
+    print(len(time_all))

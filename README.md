@@ -8,14 +8,15 @@ Download the file [automated_detection_propagation.py](automated_detection_propa
 Optionally, for retrieving the spike input data to `automated_detection_propagation` from a [MaxWell Biosystems](https://www.mxwbio.com/products/) recording with version "20190530", download the file [get_inputs_from_maxwell.py](get_inputs_from_maxwell.py) and put it in your project folder, 
 so that the function `get_inputs_from_maxwell` can be imported.
 
-## Required Python Libraries
-1. numpy
-2. pandas
-3. multiprocessing
+## Requirements
+1. Python 3
+2. numpy
+3. pandas
+4. multiprocessing (in the Python Standard Library)
 
 Only required for `get_inputs_from_maxwell`:
 1. h5py
-2. collections (built-in)
+2. collections (in the Python Standard Library)
 
 
 ## Usage

@@ -1,8 +1,10 @@
 from automated_detection_propagation import automated_detection_propagation
-from scipy.io import loadmat
 import numpy as np
 
 if __name__ == "__main__":
+    """This example requires scipy.io to read data from example_data.mat"""
+    from scipy.io import loadmat
+
     """
     Load example_data.mat which contains example data from
     https://github.com/max-c-lim/Propagation-Signal-and-Synaptic-Coupling-Algorithm-Python/blob/main/example/example_data.mat

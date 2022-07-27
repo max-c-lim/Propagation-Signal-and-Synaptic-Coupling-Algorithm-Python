@@ -447,16 +447,3 @@ def automated_detection_propagation(spike_times, thres_freq, seconds_recording, 
     propagating_times = get_propagation_time(list_of_propagation, spike_times, prop_after=ccg_after)
 
     return list_of_propagation, propagating_times
-
-
-if __name__ == "__main__":
-    spike_times = np.load("220705_16460_000439_data_spike_times.npy", allow_pickle=True).tolist()
-    list_of_propagation, time_all = automated_detection_propagation(spike_times,
-                                                                    thres_freq=0.05,
-                                                                    seconds_recording=300,
-                                                                    thres_number_spikes=None,
-                                                                    ratio=0.5,
-                                                                    thres_cooccurrences=5,
-                                                                    p=50)
-    print(len(list_of_propagation))
-    print(len(time_all))

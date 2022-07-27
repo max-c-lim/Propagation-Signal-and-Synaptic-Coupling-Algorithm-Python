@@ -1,13 +1,14 @@
 import h5py
 from collections import OrderedDict
 import numpy as np
-from scipy.io import savemat
 
 
-def get_inputs_from_maxwell(path, rec_id="0000", well_id="000", first_n_min=None, only_routed_electrodes=True, raw_data_recorded=True):
+def get_inputs_from_maxwell(path, rec_id="0000", well_id="000", first_n_min=None, flip_y_loc=2100):
     """
     Script to retrieve input data (spike_times) to automated_detection_propagation
-    from raw Maxwell recording (.h5 format)
+    from raw MaxWell Biosystems recording (.h5 format)
+
+    Only tested on recording version 20190530
 
     Inputs:
         path: str
@@ -19,21 +20,28 @@ def get_inputs_from_maxwell(path, rec_id="0000", well_id="000", first_n_min=None
         first_n_min: None or int
             Only the spike times from the first first_n_min of recording will be outputted
             If None, entire recording will be used
-        only_routed_electrodes: bool
-            If True, only routed electrodes' spike times will be returned
-            If False, all electrodes' spike times will be returned
-        raw_data_recorded: bool
-            If True, time point 0 for the spike times will be set to the starting time of the recording. Any spike that occurs before the recording start time will be discarded
-            If False, time point 0 will be the first spike time - 1
+        flip_y_loc: int or None
+            If int, the height of the MEA (in
 
     Output:
         spike_times: list
-            Input to automated_detection_propagation (in ms). Only electrodes with at least 1 spike will be returned
-        channel_map: np.array
-            1d array with same length as spike_times. Maps index in spike_times to channel id
+            Input to automated_detection_propagation (in ms).
+        channel_map: list
+            Same length as spike_times. Contains a mapping from index in spike_times to
+            (channel_id, electrode_id, x, y). I.e. the ith electrode in spike_times corresponds
+            to the ith data in channel_map.
 
     Notes:
         This function assumes that the spike times stored in the raw .h5 maxwell recording file are sorted
+        Only routed electrodes are returned, and a recording must have been made
+
+        Future parameters:
+            only_routed_electrodes: bool
+                If True, only routed electrodes' spike times will be returned
+                If False, all electrodes' spike times will be returned
+            raw_data_recorded: bool
+                If True, time point 0 for the spike times will be set to the starting time of the recording. Any spike that occurs before the recording start time will be discarded
+                If False, time point 0 will be the first spike time - 1
     """
 
     """
@@ -88,7 +96,7 @@ def get_inputs_from_maxwell(path, rec_id="0000", well_id="000", first_n_min=None
         wellplate/well000/name
         wells
         wells/well000
-        
+
     All data is stored in array (even singles numbers)
     """
     h5 = h5py.File(path)
@@ -99,24 +107,23 @@ def get_inputs_from_maxwell(path, rec_id="0000", well_id="000", first_n_min=None
     sampling_khz = sampling_hz / 1000
     spikes = rec["spikes"]
 
-    if raw_data_recorded:
-        frame_nos = rec["groups/routed/frame_nos"]
-        first_frame = frame_nos[0]
-        last_frame = frame_nos[-1]
-    else:
-        first_frame = spikes[0][0]
-        last_frame = spikes[-1][0]
+    frame_nos = rec["groups/routed/frame_nos"]
+    first_frame = frame_nos[0]
+    last_frame = frame_nos[-1]
 
     if first_n_min is not None:
         first_n_samples = first_n_min * 60 * sampling_hz
         last_frame = min(last_frame, first_frame + first_n_samples)
 
-    if only_routed_electrodes:
-        channels_selected = set(rec["groups/routed/channels"])
-    else:
-        channels_selected = None
     channel_spikes = OrderedDict()
     channel_map = []
+    for mapping in rec["settings/mapping"]:
+        if flip_y_loc is not None:
+            mapping[3] = flip_y_loc - mapping[3]
+
+        channel = mapping[0]
+        channel_map.append(mapping)
+        channel_spikes[channel] = []
 
     for spike in spikes:
         frame_num = spike[0]
@@ -127,22 +134,10 @@ def get_inputs_from_maxwell(path, rec_id="0000", well_id="000", first_n_min=None
 
         spike_ms = (frame_num - first_frame) / sampling_khz
         spike_channel = spike[1]
-        if channels_selected is None or spike_channel in channels_selected:
-            if spike_channel not in channel_spikes:
-                channel_spikes[spike_channel] = [spike_ms]
-                channel_map.append(spike_channel)
-            else:
-                channel_spikes[spike_channel].append(spike_ms)
+        if spike_channel in channel_spikes:
+            channel_spikes[spike_channel].append(spike_ms)
 
     spike_times = [np.asarray(st) for st in channel_spikes.values()]
     return spike_times, channel_map
 
-
-if __name__ == "__main__":
-    recording = "220707_16460_000439_data"
-    spike_times, channel_map = get_inputs_from_maxwell(recording+".raw.h5", first_n_min=5)
-    print(f"N spikes: {sum([len(spikes) for spikes in spike_times])}")
-    spike_times_np = np.asarray(spike_times, dtype=object)
-    np.save(f"{recording}_spike_times.npy", spike_times_np)
-    savemat(f"code/matlab/{recording}_spike_times.mat", {"spike_times": spike_times_np})
 
